@@ -19,6 +19,5 @@ class UserLoginAPIView(APIView):
         serializer = UserLoginSerializer(data=request.data, context={'request': request})
         if serializer.is_valid():
             user = serializer.validated_data['user']
-            token, created = Token.objects.get_or_create(user=user)
-            return Response({'token': token.key, 'user_id': user.id})
+            return Response({'user': user})
         return Response(serializer.errors, status=status.HTTP_401_UNAUTHORIZED)
