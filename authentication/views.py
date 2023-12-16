@@ -1,24 +1,24 @@
-# your_app/views.py
-from rest_framework import generics, status
-from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
 from rest_framework.authtoken.models import Token
-from rest_framework.permissions import AllowAny
-from django.contrib.auth import authenticate
-from .serializers import CustomUserSerializer
+from .serializers import UserRegistrationSerializer, UserLoginSerializer
 
-class LoginView(APIView):
-    permission_classes = [AllowAny]
+class UserRegistrationAPIView(APIView):
+    serializer_class = UserRegistrationSerializer
+    def post(self, request):
+        serializer = UserRegistrationSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    def post(self, request, *args, **kwargs):
-        email = request.data.get('email')
-        password = request.data.get('password')
-
-        user = authenticate(request, email=email, password=password)
-
-        if user:
+class UserLoginAPIView(APIView):
+    serializer_class = UserLoginSerializer
+    def post(self, request):
+        serializer = UserLoginSerializer(data=request.data, context={'request': request})
+        if serializer.is_valid():
+            user = serializer.validated_data['user']
             token, created = Token.objects.get_or_create(user=user)
-            serializer = CustomUserSerializer(user)
-            return Response({'token': token.key, 'user': serializer.data})
-        else:
-            return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response({'token': token.key, 'user_id': user.id})
+        return Response(serializer.errors, status=status.HTTP_401_UNAUTHORIZED)
