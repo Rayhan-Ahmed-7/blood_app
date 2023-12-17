@@ -2,7 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.authtoken.models import Token
-from .serializers import UserRegistrationSerializer, UserLoginSerializer
+from .serializers import UserRegistrationSerializer, UserLoginSerializer, UserSerializer
 
 class UserRegistrationAPIView(APIView):
     serializer_class = UserRegistrationSerializer
@@ -18,6 +18,9 @@ class UserLoginAPIView(APIView):
     def post(self, request):
         serializer = UserLoginSerializer(data=request.data, context={'request': request})
         if serializer.is_valid():
-            user = serializer.validated_data['user']
-            return Response({'user': user})
-        return Response(serializer.errors, status=status.HTTP_401_UNAUTHORIZED)
+            user = serializer.instance
+            if user.check_password(serializer.validated_data['password']):
+                response_serializer = UserSerializer(instance=user)
+                return Response({'user': response_serializer.data})
+            return Response("Invalid username and password.",status=status.HTTP_401_UNAUTHORIZED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

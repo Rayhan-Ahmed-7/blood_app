@@ -12,7 +12,6 @@ class UserSerializer(serializers.ModelSerializer):
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
-
     class Meta:
         model = CustomUser
         fields = ["email", "password", "phone_number"]
@@ -32,24 +31,12 @@ class UserLoginSerializer(serializers.Serializer):
         email = data.get("email")
         password = data.get("password")
 
-        if email and password:
-            try:
-                user = get_user_model().objects.get(email=email)
-                if user.check_password(password):
-                    # Authentication successful
-                    user_serializer = UserSerializer(user)
-                    data["user"] = user_serializer.data
-                else:
-                    # Incorrect password
-                    msg = "Unable to log in with provided credentials."
-                    raise serializers.ValidationError(msg, code="authorization")
-            except get_user_model().DoesNotExist:
-                # User does not exist
-                msg = "Unable to log in with provided credentials."
-                raise serializers.ValidationError(msg, code="authorization")
-        else:
-            # Missing email or password
-            msg = 'Must include "email" and "password".'
+        try:
+            self.instance = get_user_model().objects.get(email=email)
+            # Authentication successful
+            return data
+        except get_user_model().DoesNotExist:
+            # User does not exist
+            msg = "Unable to log in with provided credentials."
             raise serializers.ValidationError(msg, code="authorization")
-
-        return data
+      
